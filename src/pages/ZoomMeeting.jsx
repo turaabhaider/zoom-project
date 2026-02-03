@@ -1,107 +1,74 @@
-import React, { useState } from 'react';
-import ZoomVideo from '@zoom/videosdk';
-import { Users, ShieldCheck, Video, Mic, PhoneOff } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { KJUR } from 'jsrsasign'; // You may need: npm install jsrsasign
 
-// YOUR ZOOM CREDENTIALS
-const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg';
-const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
-const TOPIC = 'turrab-main'; 
+const CLIENT_ID = '07JZ0mQXRz2Yi0RNRgO4cg'; // From General app 275
+const CLIENT_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 
-const client = ZoomVideo.createClient();
-
-const ZoomMeetingRoom = () => {
-  const [joined, setJoined] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  // PURE JS SIGNATURE GENERATOR (NO NPM LIBRARIES NEEDED)
-  const generateSignature = async () => {
+const ZoomMeeting = () => {
+  
+  const generateSignature = (meetingNumber, role) => {
     const iat = Math.round(new Date().getTime() / 1000) - 30;
     const exp = iat + 60 * 60 * 2;
-    const header = { alg: 'HS256', typ: 'JWT' };
-    const payload = {
-      sdkKey: SDK_KEY,
-      mn: TOPIC,
-      role: 1,
+    const oHeader = { alg: 'HS256', typ: 'JWT' };
+
+    const oPayload = {
+      sdkKey: CLIENT_ID,
+      mn: meetingNumber,
+      role: role,
       iat: iat,
       exp: exp,
-      appKey: SDK_KEY,
-      tokenExp: exp
+      appKey: CLIENT_ID,
+      tokenExp: iat + 60 * 60 * 2
     };
 
-    const sHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const sPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const message = `${sHeader}.${sPayload}`;
-    
-    const enc = new TextEncoder();
-    const key = await window.crypto.subtle.importKey(
-      'raw', enc.encode(SDK_SECRET),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false, ['sign']
-    );
-    
-    const signature = await window.crypto.subtle.sign('HMAC', key, enc.encode(message));
-    const b64Sig = btoa(String.fromCharCode(...new Uint8Array(signature)))
-      .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    
-    return `${message}.${b64Sig}`;
+    const sHeader = JSON.stringify(oHeader);
+    const sPayload = JSON.stringify(oPayload);
+    return KJUR.jws.JWS.sign('HS256', sHeader, sPayload, CLIENT_SECRET);
   };
 
-  const joinMeeting = async () => {
-    if (loading || joined) return;
-    setLoading(true);
+  const startMeeting = async () => {
+    const { ZoomMtg } = await import('@zoomus/websdk');
 
-    try {
-      await client.init('en-US', 'Global');
-      const signature = await generateSignature(); // Uses our new Pure JS function
-      
-      await client.join(TOPIC, signature, 'Architect');
-      
-      const mediaStream = client.getMediaStream();
-      await mediaStream.startAudio();
-      await mediaStream.startVideo({ videoElement: document.querySelector('#zoom-video-element') });
+    ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
+    ZoomMtg.preLoadWasm();
+    ZoomMtg.prepareWebSDK();
 
-      setJoined(true);
-    } catch (err) {
-      console.error("Zoom Error:", err);
-      alert("Zoom failed. Check browser console.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const meetingNumber = '1234567890'; // Replace with a real meeting ID from your Zoom account
+    const passWord = ''; // Meeting passcode
+    const userName = 'Architect Studio';
+    const role = 0; // 0 for participant, 1 for host
 
-  const leaveMeeting = async () => {
-    await client.leave();
-    window.location.reload();
-  };
+    const signature = generateSignature(meetingNumber, role);
 
-  const styles = {
-    page: { backgroundColor: '#0a0a0c', minHeight: '100vh', color: 'white', padding: '40px', fontFamily: 'sans-serif' },
-    header: { display: 'flex', justifyContent: 'space-between', marginBottom: '30px', borderBottom: '1px solid #222', paddingBottom: '20px' },
-    videoBox: { position: 'relative', width: '100%', maxWidth: '900px', margin: '0 auto', aspectRatio: '16/9', backgroundColor: '#111', borderRadius: '24px', overflow: 'hidden', border: '2px solid #333' }
+    ZoomMtg.init({
+      leaveUrl: window.location.origin,
+      success: (success) => {
+        ZoomMtg.join({
+          signature: signature,
+          meetingNumber: meetingNumber,
+          userName: userName,
+          sdkKey: CLIENT_ID,
+          passWord: passWord,
+          success: (res) => console.log('Join Success', res),
+          error: (err) => console.error('Join Error', err)
+        });
+      },
+      error: (err) => console.error('Init Error', err)
+    });
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div>
-          <h1 style={{fontSize: '24px', fontWeight: 'bold'}}><Users color="#2563eb" /> ARCHITECT MEETING</h1>
-          <p style={{fontSize: '10px', color: '#555'}}><ShieldCheck size={12}/> ZOOM NATIVE MODE ACTIVE</p>
-        </div>
-        {!joined ? (
-          <button onClick={joinMeeting} disabled={loading} style={{backgroundColor: '#2563eb', border: 'none', color: 'white', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>
-            {loading ? "AUTHENTICATING..." : "JOIN ZOOM"}
-          </button>
-        ) : (
-          <button onClick={leaveMeeting} style={{backgroundColor: '#ef4444', border: 'none', color: 'white', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold'}}>LEAVE</button>
-        )}
-      </div>
-
-      <div style={styles.videoBox}>
-        <video id="zoom-video-element" style={{width: '100%', height: '100%', objectFit: 'cover'}}></video>
-        {joined && <div style={{position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.8)', padding: '8px 15px', borderRadius: '20px', fontSize: '12px'}}>SECURE LINE | ARCHITECT</div>}
-      </div>
+    <div style={{ backgroundColor: '#0a0a0c', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <h1 style={{ color: 'white', marginBottom: '20px' }}>ARCHITECT STUDIO LIVE</h1>
+      <button 
+        onClick={startMeeting}
+        style={{ backgroundColor: '#2563eb', color: 'white', padding: '15px 40px', borderRadius: '12px', fontSize: '18px', border: 'none', cursor: 'pointer' }}
+      >
+        JOIN ZOOM MEETING
+      </button>
+      <div id="zmmtg-root"></div> {/* Required for Zoom UI */}
     </div>
   );
 };
 
-export default ZoomMeetingRoom;
+export default ZoomMeeting;

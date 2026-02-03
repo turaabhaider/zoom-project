@@ -15,6 +15,7 @@
     "agora-rtc-sdk-ng": "^4.24.2",
     "axios": "^1.13.4",
     "esbuild": "^0.25.12",
+    "jsrsasign": "^11.1.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
