@@ -12,20 +12,52 @@ body {
   background: var(--bg-dark);
   color: white;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-x: hidden; /* Prevents side-scrolling on mobile */
 }
 
-.studio-wrapper { min-height: 100vh; padding: 2rem 1rem; display: flex; justify-content: center; }
-.studio-container { width: 100%; max-width: 1000px; }
-.studio-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-.studio-title { font-weight: 900; display: flex; align-items: center; gap: 10px; margin: 0; }
+/* Container that adapts to screen width */
+.studio-wrapper { 
+  min-height: 100vh; 
+  padding: 1rem; 
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+}
 
+.studio-container { 
+  width: 100%; 
+  max-width: 1200px; /* Allows it to grow on large screens */
+}
+
+/* Header adapts from Row to Column on small screens */
+.studio-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 1.5rem; 
+  flex-wrap: wrap; /* Wraps items if screen is too narrow */
+  gap: 1rem;
+}
+
+.studio-title { 
+  font-size: clamp(1.2rem, 5vw, 2rem); /* Dynamic font size */
+  font-weight: 900; 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  margin: 0; 
+}
+
+/* Video Stage - Stays 16:9 ratio on all screens */
 .video-stage {
   position: relative;
+  width: 100%;
   aspect-ratio: 16/9;
   background: #000;
-  border-radius: 24px;
+  border-radius: clamp(12px, 3vw, 24px);
   border: 1px solid var(--border);
   overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
 .video-overlay {
@@ -38,19 +70,58 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 5;
+  text-align: center;
+  padding: 1rem;
 }
 
 .btn-launch {
   background: var(--accent);
   color: white;
   border: none;
-  padding: 1rem 3rem;
+  padding: 1rem 2.5rem;
   border-radius: 15px;
   font-weight: 800;
   cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.2s;
 }
 
-.controls-row { margin-top: 2rem; display: flex; justify-content: center; gap: 15px; }
-.control-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 15px; border-radius: 15px; cursor: pointer; }
-.btn-end { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0 25px; border-radius: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-.id-badge { background: #0f172a; border: 1px solid #1e293b; padding: 8px 16px; border-radius: 12px; }
+.btn-launch:active { transform: scale(0.95); }
+
+/* Controls layout fix for mobile */
+.controls-row { 
+  margin-top: 1.5rem; 
+  display: flex; 
+  justify-content: center; 
+  gap: 12px; 
+  flex-wrap: wrap;
+}
+
+.control-btn { 
+  background: var(--glass); 
+  border: 1px solid var(--border); 
+  color: white; 
+  padding: clamp(10px, 2vw, 15px); 
+  border-radius: 12px; 
+  cursor: pointer; 
+}
+
+.btn-end { 
+  background: rgba(239, 68, 68, 0.1); 
+  color: #ef4444; 
+  border: 1px solid rgba(239, 68, 68, 0.2); 
+  padding: 0 20px; 
+  border-radius: 12px; 
+  font-weight: 700; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+}
+
+/* Specific Tablet/Mobile adjustments */
+@media (max-width: 600px) {
+  .studio-header { flex-direction: column; align-items: flex-start; }
+  .btn-end { height: 50px; width: 100%; justify-content: center; }
+  .controls-row { width: 100%; }
+}
