@@ -9,8 +9,9 @@
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/2.18.0/css/react-select.css" />
     
     <style>
+      /* FIX: Prevents the Zoom layer from blocking home page buttons */
       #zmmtg-root {
-        display: none; /* Keeps home page clickable */
+        display: none; 
         position: fixed;
         width: 100%;
         height: 100%;
@@ -18,6 +19,7 @@
         left: 0;
         z-index: 999;
       }
+      body { width: 100%; height: 100%; overflow: auto; background-color: #0a0a0c; }
     </style>
 
     <script src="https://source.zoom.us/2.18.0/lib/vendor/react.min.js"></script>
@@ -25,11 +27,14 @@
     <script src="https://source.zoom.us/2.18.0/lib/vendor/redux.min.js"></script>
     <script src="https://source.zoom.us/2.18.0/lib/vendor/redux-thunk.min.js"></script>
     <script src="https://source.zoom.us/2.18.0/lib/vendor/lodash.min.js"></script>
+    
     <script src="https://source.zoom.us/zoom-meeting-2.18.0.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
+    
     <div id="zmmtg-root"></div>
+    
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

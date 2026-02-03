@@ -8,13 +8,18 @@ export default defineConfig({
     "global": "window", 
   },
   optimizeDeps: {
-    exclude: ['@zoomus/websdk']
+    // Zoom needs to be included for Vite to bundle it correctly for the browser
+    include: ['@zoomus/websdk']
   },
   server: {
-    // This allows your ngrok link to bypass Vite's security block
     allowedHosts: [
       'marth-coruscant-subterminally.ngrok-free.dev'
-    ]
+    ],
+    // MANDATORY FOR MOBILE VIDEO:
+    headers: {
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Opener-Policy": "same-origin",
+    },
   },
   build: {
     commonjsOptions: { transformMixedEsModules: true },
