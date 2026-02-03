@@ -3,16 +3,15 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  // This 'define' section fixes the C$1 error for Zoom
   define: {
     "process.env": {},
     "global": "window", 
   },
   optimizeDeps: {
-    include: ['@zoomus/websdk', 'jsrsasign'],
+    // Adding this tells Vite to stop trying to "fix" these libraries
+    exclude: ['@zoomus/websdk']
   },
   build: {
-    cssMinify: 'esbuild',
-    outDir: 'dist',
+    commonjsOptions: { transformMixedEsModules: true }
   }
 })
