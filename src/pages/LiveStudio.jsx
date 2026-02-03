@@ -3,9 +3,7 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Mic, Video, PhoneOff, Radio, ShieldCheck } from 'lucide-react';
 
 const AGORA_APP_ID = "fd09ede01c4e4cb1a9fb4c07d41e30df"; 
-
-// Create client inside the component or ensure it's reset correctly
-let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 const LiveStudio = () => {
   const [joined, setJoined] = useState(false);
@@ -17,15 +15,13 @@ const LiveStudio = () => {
     setLoading(true);
 
     try {
-      // FORCE CLEANUP: If a previous attempt failed, we reset the connection state
-      if (client.connectionState === "DISCONNECTED") {
-        await client.join(AGORA_APP_ID, "main-room", null, null);
-      } else if (client.connectionState === "CONNECTED") {
-        console.warn("Already connected to gateway.");
-      }
+      // RESET: Always leave before joining to clear any "Invalid Operation" errors
+      try { await client.leave(); } catch(e) {}
+
+      await client.join(AGORA_APP_ID, "main-room", null, null);
 
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
-        encoderConfig: "720p_1"
+        encoderConfig: "720p_1" // Best for mobile phones
       });
 
       localTracksRef.current = [audioTrack, videoTrack];
@@ -35,9 +31,8 @@ const LiveStudio = () => {
       setJoined(true);
     } catch (error) {
       console.error("GATEWAY ERROR:", error.message);
-      // If gateway fails, we must leave to reset the internal client state
-      await client.leave(); 
-      alert("Network Error: Please try a different Wi-Fi or Mobile Data.");
+      // Automatically alerts you to switch networks
+      alert("Network Error: Please switch to Mobile Data (Hotspot) and try again.");
     } finally {
       setLoading(false);
     }
@@ -67,7 +62,7 @@ const LiveStudio = () => {
             <div className="video-overlay">
               <Video size={48} color="#38bdf8" style={{marginBottom: '20px'}} />
               <button onClick={startStreaming} className="btn-launch" disabled={loading}>
-                {loading ? "ESTABLISHING SECURE CONNECTION..." : "GO LIVE NOW"}
+                {loading ? "CONNECTING..." : "GO LIVE NOW"}
               </button>
             </div>
           )}
