@@ -1,74 +1,60 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { KJUR } from 'jsrsasign';
 
 const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg';
 const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 
 const ZoomMeeting = () => {
-  
+  const [isReady, setIsReady] = useState(false);
+
+  // SILENT CHECK: No alerts. This waits for the SDK to be ready in the background.
+  useEffect(() => {
+    const checkZoom = setInterval(() => {
+      if (window.ZoomMtg) {
+        setIsReady(true);
+        clearInterval(checkZoom);
+      }
+    }, 1000);
+    return () => clearInterval(checkZoom);
+  }, []);
+
   const generateSignature = (meetingNumber, role) => {
     const iat = Math.round(new Date().getTime() / 1000) - 30;
     const exp = iat + 60 * 60 * 2;
     const oHeader = { alg: 'HS256', typ: 'JWT' };
     const oPayload = {
-      sdkKey: SDK_KEY,
-      mn: meetingNumber,
-      role: role,
-      iat: iat,
-      exp: exp,
-      appKey: SDK_KEY,
-      tokenExp: iat + 60 * 60 * 2
+      sdkKey: SDK_KEY, mn: meetingNumber, role: role, iat: iat, exp: exp, appKey: SDK_KEY, tokenExp: iat + 60 * 60 * 2
     };
     return KJUR.jws.JWS.sign('HS256', JSON.stringify(oHeader), JSON.stringify(oPayload), SDK_SECRET);
   };
 
   const startMeeting = async () => {
-    if (typeof window.ZoomMtg === 'undefined') {
-      alert("Zoom SDK is loading. Please wait 5 seconds.");
-      return;
-    }
-
-    // MOBILE FIX: Request permissions first to 'wake up' the mobile browser
-    try {
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    } catch (e) {
-      console.log("Permission already handled or denied");
-    }
+    if (!isReady) return; // Button simply won't fire until it's ready
 
     const ZoomMtg = window.ZoomMtg;
-    const meetingRoot = document.getElementById('zmmtg-root');
-    if (meetingRoot) meetingRoot.style.display = 'block';
+    document.getElementById('zmmtg-root').style.display = 'block';
 
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
     ZoomMtg.preLoadWasm();
     ZoomMtg.prepareWebSDK();
 
-    const meetingNumber = '8145639201'; 
+    const meetingNumber = '8145639201';
     const signature = generateSignature(meetingNumber, 0);
 
     ZoomMtg.init({
       leaveUrl: window.location.origin,
-      // --- MOBILE FIXES ADDED HERE ---
-      disableJoinAudioVideoUI: false, 
-      patchJsMedia: true, 
+      patchJsMedia: true,
+      disableJoinAudioVideoUI: false,
       success: () => {
         ZoomMtg.join({
           signature: signature,
           meetingNumber: meetingNumber,
-          userName: 'Architect Mobile',
+          userName: 'Architect Admin',
           sdkKey: SDK_KEY,
           passWord: '',
-          success: (res) => console.log('Join Success'),
-          error: (err) => {
-            console.error(err);
-            if (meetingRoot) meetingRoot.style.display = 'none';
-          }
+          success: (res) => console.log('Joined'),
+          error: (err) => console.log(err)
         });
-      },
-      error: (err) => {
-        console.error(err);
-        if (meetingRoot) meetingRoot.style.display = 'none';
       }
     });
   };
@@ -76,8 +62,22 @@ const ZoomMeeting = () => {
   return (
     <div style={{ backgroundColor: '#0a0a0c', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <h1 style={{ color: 'white' }}>ARCHITECT STUDIO LIVE</h1>
-      <button onClick={startMeeting} style={{ backgroundColor: '#2563eb', color: 'white', padding: '12px 30px', borderRadius: '8px', border: 'none', cursor: 'pointer', marginTop: '20px' }}>
-        JOIN ZOOM MEETING
+      
+      {/* Button changes color/text when ready so user knows it's working */}
+      <button 
+        onClick={startMeeting} 
+        disabled={!isReady}
+        style={{ 
+          backgroundColor: isReady ? '#2563eb' : '#333', 
+          color: 'white', 
+          padding: '12px 30px', 
+          borderRadius: '8px', 
+          border: 'none', 
+          cursor: isReady ? 'pointer' : 'not-allowed', 
+          marginTop: '20px' 
+        }}
+      >
+        {isReady ? 'JOIN ZOOM MEETING' : 'LOADING SYSTEM...'}
       </button>
     </div>
   );
