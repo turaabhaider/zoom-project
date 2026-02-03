@@ -8,10 +8,17 @@ export default defineConfig({
     "global": "window", 
   },
   optimizeDeps: {
-    // Adding this tells Vite to stop trying to "fix" these libraries
     exclude: ['@zoomus/websdk']
   },
+  server: {
+    // This allows your ngrok link to bypass Vite's security block
+    allowedHosts: [
+      'marth-coruscant-subterminally.ngrok-free.dev'
+    ]
+  },
   build: {
-    commonjsOptions: { transformMixedEsModules: true }
+    commonjsOptions: { transformMixedEsModules: true },
+    cssMinify: 'esbuild',
+    outDir: 'dist',
   }
 })
