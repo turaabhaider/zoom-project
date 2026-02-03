@@ -7,38 +7,40 @@ const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 const ZoomMeeting = () => {
   const [status, setStatus] = useState('JOIN ZOOM MEETING');
 
-  const generateSignature = (meetingNumber, role) => {
-    const iat = Math.round(new Date().getTime() / 1000) - 30;
-    const exp = iat + 60 * 60 * 2;
-    const oHeader = { alg: 'HS256', typ: 'JWT' };
-    const oPayload = { sdkKey: SDK_KEY, mn: meetingNumber, role: role, iat: iat, exp: exp, appKey: SDK_KEY, tokenExp: exp };
-    return KJUR.jws.JWS.sign('HS256', JSON.stringify(oHeader), JSON.stringify(oPayload), SDK_SECRET);
-  };
-
   const startMeeting = async () => {
-    // FIX: Wait loop for slow mobile networks
-    if (!window.ZoomMtg) {
-      setStatus('LOADING LIBRARIES...');
-      let retryCount = 0;
-      while (!window.ZoomMtg && retryCount < 20) {
-        await new Promise(r => setTimeout(r, 500));
-        retryCount++;
-      }
-      if (!retryCount >= 20) { setStatus('NETWORK ERROR'); return; }
+    setStatus('LOADING...');
+
+    // Silent wait loop replaces the alert
+    let waitCount = 0;
+    while (!window.ZoomMtg && waitCount < 10) {
+      await new Promise(r => setTimeout(r, 300));
+      waitCount++;
     }
 
-    setStatus('STARTING ZOOM...');
+    if (!window.ZoomMtg) {
+      setStatus('NETWORK ERROR');
+      return;
+    }
+
     const ZoomMtg = window.ZoomMtg;
     
-    // Set library paths
+    // Fix for 'undefined' error
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
     ZoomMtg.preLoadWasm();
     ZoomMtg.prepareWebSDK();
 
     const meetingNumber = '8145639201';
-    const signature = generateSignature(meetingNumber, 0);
+    
+    // Signature Generation
+    const iat = Math.round(new Date().getTime() / 1000) - 30;
+    const exp = iat + 60 * 60 * 2;
+    const signature = KJUR.jws.JWS.sign('HS256', 
+      JSON.stringify({ alg: 'HS256', typ: 'JWT' }), 
+      JSON.stringify({ sdkKey: SDK_KEY, mn: meetingNumber, role: 0, iat, exp, appKey: SDK_KEY, tokenExp: exp }), 
+      SDK_SECRET
+    );
 
-    // Show the hidden Zoom container
+    // Make Zoom visible immediately
     const zoomRoot = document.getElementById('zmmtg-root');
     if (zoomRoot) {
       zoomRoot.style.zIndex = '999999';
@@ -56,17 +58,15 @@ const ZoomMeeting = () => {
           sdkKey: SDK_KEY,
           passWord: '',
           success: () => setStatus('SUCCESS'),
-          error: (err) => {
-            console.error(err);
+          error: (e) => {
+            console.error(e);
             setStatus('JOIN FAILED');
-            if (zoomRoot) { zoomRoot.style.zIndex = '-1'; zoomRoot.style.opacity = '0'; }
           }
         });
       },
-      error: (err) => {
-        console.error(err);
-        setStatus('RETRY JOIN');
-        if (zoomRoot) { zoomRoot.style.zIndex = '-1'; zoomRoot.style.opacity = '0'; }
+      error: (e) => {
+        console.error(e);
+        setStatus('INIT ERROR');
       }
     });
   };
