@@ -3,49 +3,48 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Mic, Video, PhoneOff, Radio, ShieldCheck } from 'lucide-react';
 
 const AGORA_APP_ID = "fd09ede01c4e4cb1a9fb4c07d41e30df"; 
-const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+// Create client inside the component or ensure it's reset correctly
+let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 const LiveStudio = () => {
   const [joined, setJoined] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false); // Prevents INVALID_OPERATION
+  const [loading, setLoading] = useState(false);
   const localTracksRef = useRef([]);
 
   const startStreaming = async () => {
-    if (isConnecting || joined) return; // Stop if already trying to connect
-    
-    setIsConnecting(true);
+    if (loading || joined) return;
+    setLoading(true);
+
     try {
-      // 1. Join with protection against multiple clicks
-      await client.join(AGORA_APP_ID, "main-room", null, null);
-
-      // 2. Request Hardware with specific mobile-friendly constraints
-      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
-        encoderConfig: { width: { max: 1280 }, height: { max: 720 }, frameRate: 30 }
-      });
-      
-      localTracksRef.current = [audioTrack, videoTrack];
-
-      // 3. Play immediately after verifying the player exists
-      const player = document.getElementById("local-player");
-      if (player) {
-        await videoTrack.play("local-player");
+      // FORCE CLEANUP: If a previous attempt failed, we reset the connection state
+      if (client.connectionState === "DISCONNECTED") {
+        await client.join(AGORA_APP_ID, "main-room", null, null);
+      } else if (client.connectionState === "CONNECTED") {
+        console.warn("Already connected to gateway.");
       }
+
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
+        encoderConfig: "720p_1"
+      });
+
+      localTracksRef.current = [audioTrack, videoTrack];
+      await videoTrack.play("local-player");
+      await client.publish(localTracksRef.current);
       
-      await client.publish([audioTrack, videoTrack]);
       setJoined(true);
     } catch (error) {
-      console.error("Connection failed:", error.message);
-      // If gateway fails, it's usually a network/firewall issue
+      console.error("GATEWAY ERROR:", error.message);
+      // If gateway fails, we must leave to reset the internal client state
+      await client.leave(); 
+      alert("Network Error: Please try a different Wi-Fi or Mobile Data.");
     } finally {
-      setIsConnecting(false);
+      setLoading(false);
     }
   };
 
   const stopStreaming = async () => {
-    localTracksRef.current.forEach(track => {
-      track.stop();
-      track.close();
-    });
+    localTracksRef.current.forEach(t => { t.stop(); t.close(); });
     await client.leave();
     setJoined(false);
     window.location.reload(); 
@@ -55,13 +54,10 @@ const LiveStudio = () => {
     <div className="studio-wrapper">
       <div className="studio-container">
         <header className="studio-header">
-          <div className="header-left">
-            <h1 className="studio-title">
-              <Radio className={joined ? "live-pulse" : ""} size={32} color={joined ? "#ef4444" : "#475569"} />
-              ARCHITECT STUDIO
-            </h1>
-            <p className="status-text"><ShieldCheck size={14} /> SECURE LINE ACTIVE</p>
-          </div>
+          <h1 className="studio-title">
+            <Radio className={joined ? "live-pulse" : ""} size={32} color={joined ? "#ef4444" : "#475569"} />
+            ARCHITECT STUDIO
+          </h1>
           <div className="id-badge">ID: fd09...30df</div>
         </header>
 
@@ -69,13 +65,9 @@ const LiveStudio = () => {
           <div id="local-player" className="player-view"></div>
           {!joined && (
             <div className="video-overlay">
-              <div className="icon-box"><Video size={40} color="#38bdf8" /></div>
-              <button 
-                onClick={startStreaming} 
-                className="btn-launch" 
-                disabled={isConnecting}
-              >
-                {isConnecting ? "CONNECTING..." : "GO LIVE NOW"}
+              <Video size={48} color="#38bdf8" style={{marginBottom: '20px'}} />
+              <button onClick={startStreaming} className="btn-launch" disabled={loading}>
+                {loading ? "ESTABLISHING SECURE CONNECTION..." : "GO LIVE NOW"}
               </button>
             </div>
           )}
@@ -83,11 +75,9 @@ const LiveStudio = () => {
 
         {joined && (
           <div className="controls-row">
-            <button className="control-btn"><Mic size={24} /></button>
-            <button className="control-btn"><Video size={24} /></button>
-            <button onClick={stopStreaming} className="btn-end">
-              <PhoneOff size={20} /> END SESSION
-            </button>
+            <button className="control-btn"><Mic /></button>
+            <button className="control-btn"><Video /></button>
+            <button onClick={stopStreaming} className="btn-end"><PhoneOff /> END SESSION</button>
           </div>
         )}
       </div>
