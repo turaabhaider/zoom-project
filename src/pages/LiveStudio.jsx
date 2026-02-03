@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Mic, Video, PhoneOff, Radio, ShieldCheck } from 'lucide-react';
 
@@ -11,17 +11,27 @@ const LiveStudio = () => {
 
   const startStreaming = async () => {
     try {
-      // Joined using the verified App ID
+      // 1. Join with null token for testing mode
       await client.join(AGORA_APP_ID, "main-room", null, null);
-      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-      setLocalTracks([audioTrack, videoTrack]);
+
+      // 2. Optimized for mobile and web
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
+        encoderConfig: "720p_1" 
+      });
       
-      videoTrack.play("local-player");
+      setLocalTracks([audioTrack, videoTrack]);
+
+      // 3. Play video only if the div exists to avoid console errors
+      if (document.getElementById("local-player")) {
+        await videoTrack.play("local-player");
+      }
+      
       await client.publish([audioTrack, videoTrack]);
       setJoined(true);
+      console.log("VORA: Broadcast Live");
     } catch (error) {
-      // Alert removed for a cleaner production experience
-      console.error("System Check: Broadcast initialization failed.", error);
+      // No more alerts, just silent debugging
+      console.error("Stream Error:", error.message);
     }
   };
 
@@ -46,7 +56,7 @@ const LiveStudio = () => {
                <span style={{fontSize: '12px', color: '#64748b', fontWeight: 'bold', letterSpacing: '1px'}}>SECURE BROADCAST</span>
             </div>
           </div>
-          <div style={{background: '#0f172a', border: '1px solid #1e293b', padding: '8px 16px', borderRadius: '12px'}}>
+          <div className="id-badge">
             <span style={{color: '#38bdf8', fontFamily: 'monospace', fontSize: '12px'}}>ID: fd09...30df</span>
           </div>
         </header>
@@ -56,7 +66,7 @@ const LiveStudio = () => {
           
           {!joined && (
             <div className="video-overlay">
-              <div style={{background: 'rgba(56,189,248,0.1)', padding: '20px', borderRadius: '50%', marginBottom: '20px'}}>
+              <div className="icon-pulse">
                 <Video color="#38bdf8" size={40} />
               </div>
               <button onClick={startStreaming} className="btn-launch">
@@ -68,7 +78,7 @@ const LiveStudio = () => {
         </div>
 
         {joined && (
-          <div style={{marginTop: '40px', display: 'flex', justifyContent: 'center', gap: '20px'}}>
+          <div className="controls-row">
             <button className="control-btn"><Mic size={24} /></button>
             <button className="control-btn"><Video size={24} /></button>
             <button onClick={stopStreaming} className="btn-end">

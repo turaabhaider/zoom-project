@@ -1,130 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap');
 
 :root {
   --bg-dark: #020617;
-  --bg-card: rgba(15, 23, 42, 0.6);
-  --accent-blue: #38bdf8;
-  --accent-red: #ef4444;
-  --text-main: #f8fafc;
-  --border: rgba(255, 255, 255, 0.08);
-  --glass: blur(12px) saturate(180%);
+  --accent: #38bdf8;
+  --glass: rgba(15, 23, 42, 0.7);
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 body {
   margin: 0;
-  background-color: var(--bg-dark);
-  background-image: radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%);
-  color: var(--text-main);
+  background: var(--bg-dark);
+  color: white;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  overflow-x: hidden;
 }
 
-/* Custom Containers */
-.studio-wrapper {
-  min-height: 100vh;
-  padding: 3rem 1.5rem;
-  display: flex;
-  justify-content: center;
-}
+.studio-wrapper { min-height: 100vh; padding: 2rem 1rem; display: flex; justify-content: center; }
+.studio-container { width: 100%; max-width: 1000px; }
+.studio-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.studio-title { font-weight: 900; display: flex; align-items: center; gap: 10px; margin: 0; }
 
-.studio-container {
-  width: 100%;
-  max-width: 1000px;
-}
-
-/* Header Styling */
-.studio-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-}
-
-.studio-title {
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* The Main Stage */
 .video-stage {
   position: relative;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16/9;
   background: #000;
-  border-radius: 40px;
+  border-radius: 24px;
   border: 1px solid var(--border);
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 }
 
 .video-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 5;
 }
 
-/* Professional Buttons */
 .btn-launch {
-  background: var(--accent-blue);
+  background: var(--accent);
   color: white;
   border: none;
-  padding: 1.25rem 2.5rem;
-  border-radius: 20px;
-  font-size: 1.1rem;
+  padding: 1rem 3rem;
+  border-radius: 15px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(56, 189, 248, 0.3);
-  transition: all 0.3s ease;
 }
 
-.btn-launch:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 30px rgba(56, 189, 248, 0.4);
-}
-
-.control-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: white;
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.control-btn:hover {
-  background: rgba(255,255,255,0.1);
-}
-
-.btn-end {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--accent-red);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  padding: 0 2rem;
-  height: 64px;
-  border-radius: 20px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: 0.3s;
-}
-
-.btn-end:hover {
-  background: var(--accent-red);
-  color: white;
-}
+.controls-row { margin-top: 2rem; display: flex; justify-content: center; gap: 15px; }
+.control-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 15px; border-radius: 15px; cursor: pointer; }
+.btn-end { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0 25px; border-radius: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.id-badge { background: #0f172a; border: 1px solid #1e293b; padding: 8px 16px; border-radius: 12px; }
