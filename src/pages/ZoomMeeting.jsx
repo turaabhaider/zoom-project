@@ -5,7 +5,7 @@ const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg';
 const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 
 const ZoomMeeting = () => {
-  const [buttonText, setButtonText] = useState('JOIN ZOOM MEETING');
+  const [status, setStatus] = useState('JOIN ZOOM MEETING');
 
   const generateSignature = (meetingNumber, role) => {
     const iat = Math.round(new Date().getTime() / 1000) - 30;
@@ -18,31 +18,20 @@ const ZoomMeeting = () => {
   };
 
   const startMeeting = async () => {
-    setButtonText('CONNECTING...');
-
-    // 1. SILENT RETRY LOOP: If script is missing, wait 1s and try again (up to 3 times)
-    let attempts = 0;
-    while (!window.ZoomMtg && attempts < 3) {
-      console.log("Script missing, retrying...");
-      await new Promise(r => setTimeout(r, 1000));
-      attempts++;
-    }
-
+    // Check if Zoom is there, if not, try to wait 1 second silently
     if (!window.ZoomMtg) {
-      // If still missing, just log it. DO NOT SHOW ALERT.
-      console.error("Zoom Library Failed to Load");
-      setButtonText('NETWORK ERROR - REFRESH');
-      return;
+        setStatus('LOADING SDK...');
+        await new Promise(r => setTimeout(r, 1500));
+        if (!window.ZoomMtg) {
+            setStatus('SDK ERROR - REFRESH');
+            return;
+        }
     }
 
-    // 2. FORCE VISIBILITY (Mobile Fix)
-    const zoomRoot = document.getElementById('zmmtg-root');
-    if (zoomRoot) {
-      zoomRoot.style.display = 'block';
-      zoomRoot.style.zIndex = '2147483647'; // Max integer z-index
-    }
-
+    setStatus('STARTING...');
     const ZoomMtg = window.ZoomMtg;
+    
+    // Fix for "Init invalid parameter"
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
     ZoomMtg.preLoadWasm();
     ZoomMtg.prepareWebSDK();
@@ -50,52 +39,46 @@ const ZoomMeeting = () => {
     const meetingNumber = '8145639201';
     const signature = generateSignature(meetingNumber, 0);
 
+    document.getElementById('zmmtg-root').style.display = 'block';
+
     ZoomMtg.init({
-      leaveUrl: window.location.href,
+      leaveUrl: window.location.origin, // Simplified URL
       patchJsMedia: true,
       success: () => {
         ZoomMtg.join({
           signature: signature,
           meetingNumber: meetingNumber,
-          userName: 'Architect Mobile',
+          userName: 'Architect Studio',
           sdkKey: SDK_KEY,
           passWord: '',
-          success: () => console.log('Joined'),
+          success: (res) => {
+            console.log('Join Success');
+            setStatus('JOINED');
+          },
           error: (err) => {
-            console.error(err);
-            // Silent fail - just reset button
-            setButtonText('TRY AGAIN');
-            if (zoomRoot) zoomRoot.style.display = 'none';
+            console.log(err);
+            setStatus('JOIN FAILED');
           }
         });
       },
       error: (err) => {
-        console.error(err);
-        setButtonText('TRY AGAIN');
-        if (zoomRoot) zoomRoot.style.display = 'none';
+        console.log("Init Error", err);
+        setStatus('RETRY JOIN');
       }
     });
   };
 
   return (
     <div style={{ backgroundColor: '#0a0a0c', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <h1 style={{ color: 'white', marginBottom: '30px' }}>ARCHITECT STUDIO LIVE</h1>
-      
-      {/* BUTTON IS INSTANTLY CLICKABLE */}
+      <h1 style={{ color: 'white', letterSpacing: '2px' }}>ARCHITECT STUDIO LIVE</h1>
       <button 
         onClick={startMeeting} 
         style={{ 
-          backgroundColor: '#2563eb', 
-          color: 'white', 
-          padding: '15px 40px', 
-          borderRadius: '8px', 
-          border: 'none', 
-          fontSize: '18px',
-          fontWeight: 'bold',
-          cursor: 'pointer' 
+          backgroundColor: '#2563eb', color: 'white', padding: '15px 40px', 
+          borderRadius: '10px', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginTop: '30px' 
         }}
       >
-        {buttonText}
+        {status}
       </button>
     </div>
   );

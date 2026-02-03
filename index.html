@@ -8,8 +8,14 @@
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/2.18.0/css/bootstrap.css" />
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/2.18.0/css/react-select.css" />
     
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/react.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/react-dom.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/redux.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/redux-thunk.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/lodash.min.js"></script>
+    <script src="https://source.zoom.us/zoom-meeting-2.18.0.min.js"></script>
+
     <style>
-      /* FORCE ZOOM ON TOP */
       #zmmtg-root {
         display: none; 
         position: fixed !important;
@@ -17,18 +23,11 @@
         height: 100% !important;
         top: 0 !important;
         left: 0 !important;
-        z-index: 2147483647 !important; /* Max Z-Index */
+        z-index: 999999 !important;
         background-color: black !important;
       }
-      body { margin: 0; background-color: #0a0a0c; }
+      body { margin: 0; background-color: #0a0a0c; overflow: auto !important; }
     </style>
-
-    <script src="https://source.zoom.us/2.18.0/lib/vendor/react.min.js"></script>
-    <script src="https://source.zoom.us/2.18.0/lib/vendor/react-dom.min.js"></script>
-    <script src="https://source.zoom.us/2.18.0/lib/vendor/redux.min.js"></script>
-    <script src="https://source.zoom.us/2.18.0/lib/vendor/redux-thunk.min.js"></script>
-    <script src="https://source.zoom.us/2.18.0/lib/vendor/lodash.min.js"></script>
-    <script src="https://source.zoom.us/zoom-meeting-2.18.0.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
