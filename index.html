@@ -2,13 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Architect Studio Live</title>
 
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/2.18.0/css/bootstrap.css" />
     <link type="text/css" rel="stylesheet" href="https://source.zoom.us/2.18.0/css/react-select.css" />
     
     <style>
+      /* FORCE ZOOM ON TOP */
       #zmmtg-root {
         display: none; 
         position: fixed !important;
@@ -16,11 +17,17 @@
         height: 100% !important;
         top: 0 !important;
         left: 0 !important;
-        z-index: 999999 !important;
-        background-color: #000 !important;
+        z-index: 2147483647 !important; /* Max Z-Index */
+        background-color: black !important;
       }
+      body { margin: 0; background-color: #0a0a0c; }
     </style>
 
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/react.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/react-dom.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/redux.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/redux-thunk.min.js"></script>
+    <script src="https://source.zoom.us/2.18.0/lib/vendor/lodash.min.js"></script>
     <script src="https://source.zoom.us/zoom-meeting-2.18.0.min.js"></script>
   </head>
   <body>
