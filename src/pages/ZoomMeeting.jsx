@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { KJUR } from 'jsrsasign';
 
@@ -22,51 +23,51 @@ const ZoomMeeting = () => {
     return KJUR.jws.JWS.sign('HS256', JSON.stringify(oHeader), JSON.stringify(oPayload), SDK_SECRET);
   };
 
-  const startMeeting = () => {
-    // FIX: Check if SDK is actually loaded
-    if (!window.ZoomMtg) {
-      alert("Zoom SDK is still loading or failed to load. Please refresh the page.");
+  const startMeeting = async () => {
+    if (typeof window.ZoomMtg === 'undefined') {
+      alert("Zoom SDK is loading. Please wait 5 seconds.");
       return;
     }
 
-    const ZoomMtg = window.ZoomMtg;
-
-    // Show the hidden Zoom container
-    const meetingRoot = document.getElementById('zmmtg-root');
-    if (meetingRoot) {
-      meetingRoot.style.display = 'block';
+    // MOBILE FIX: Request permissions first to 'wake up' the mobile browser
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    } catch (e) {
+      console.log("Permission already handled or denied");
     }
+
+    const ZoomMtg = window.ZoomMtg;
+    const meetingRoot = document.getElementById('zmmtg-root');
+    if (meetingRoot) meetingRoot.style.display = 'block';
 
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
     ZoomMtg.preLoadWasm();
     ZoomMtg.prepareWebSDK();
 
-    const meetingNumber = '8145639201'; // Ensure this is a real ID
-    const passWord = ''; 
-    const userName = 'Architect Admin';
-    const role = 0; 
-
-    const signature = generateSignature(meetingNumber, role);
+    const meetingNumber = '8145639201'; 
+    const signature = generateSignature(meetingNumber, 0);
 
     ZoomMtg.init({
       leaveUrl: window.location.origin,
-      patchJsMedia: true,
+      // --- MOBILE FIXES ADDED HERE ---
+      disableJoinAudioVideoUI: false, 
+      patchJsMedia: true, 
       success: () => {
         ZoomMtg.join({
           signature: signature,
           meetingNumber: meetingNumber,
-          userName: userName,
+          userName: 'Architect Mobile',
           sdkKey: SDK_KEY,
-          passWord: passWord,
-          success: (res) => console.log('Zoom Joined'),
+          passWord: '',
+          success: (res) => console.log('Join Success'),
           error: (err) => {
-            console.error('Join Error', err);
+            console.error(err);
             if (meetingRoot) meetingRoot.style.display = 'none';
           }
         });
       },
       error: (err) => {
-        console.error('Init Error', err);
+        console.error(err);
         if (meetingRoot) meetingRoot.style.display = 'none';
       }
     });
