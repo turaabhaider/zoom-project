@@ -10,18 +10,19 @@ const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 const AgoraMeeting = () => {
   const [joined, setJoined] = useState(false);
   const [status, setStatus] = useState('JOIN LIVE MEETING');
+  const [localTracks, setLocalTracks] = useState([]); // Added to manage controls
+  const [isMuted, setIsMuted] = useState(false);
 
   const startCall = async () => {
     try {
       setStatus('CONNECTING...');
       
-      // 1. Join the channel first
       await client.join(APP_ID, CHANNEL, TOKEN, 0);
       
-      // 2. Try to create tracks with error handling for 'Device Not Found'
       let audioTrack, videoTrack;
       try {
         [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+        setLocalTracks([audioTrack, videoTrack]); // Store tracks for controls
       } catch (deviceError) {
         console.error("Camera/Mic access denied or not found:", deviceError);
         setStatus('CAMERA NOT FOUND');
@@ -32,7 +33,6 @@ const AgoraMeeting = () => {
       setJoined(true);
       setStatus('LIVE');
 
-      // 3. Play and Publish
       setTimeout(() => {
         const playerDiv = document.getElementById('local-player');
         if (playerDiv) videoTrack.play(playerDiv);
@@ -44,6 +44,25 @@ const AgoraMeeting = () => {
       console.error("Join Failed:", error);
       setStatus('JOIN FAILED - RETRY');
     }
+  };
+
+  // --- NEW CONTROL FUNCTIONS ---
+  const toggleMute = async () => {
+    if (localTracks[0]) {
+      await localTracks[0].setEnabled(isMuted);
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const endMeeting = async () => {
+    localTracks.forEach(track => {
+      track.stop();
+      track.close();
+    });
+    await client.leave();
+    setJoined(false);
+    setStatus('JOIN LIVE MEETING');
+    window.location.reload(); // Ensures hardware is fully released
   };
 
   return (
@@ -59,7 +78,26 @@ const AgoraMeeting = () => {
           </button>
         </>
       ) : (
-        <div id="local-player" style={{ width: '100%', height: '100%', backgroundColor: 'black', position: 'fixed', top: 0, left: 0 }}></div>
+        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+          <div id="local-player" style={{ width: '100%', height: '100%', backgroundColor: 'black', position: 'fixed', top: 0, left: 0 }}></div>
+          
+          {/* CONTROLS OVERLAY */}
+          <div style={{ position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '20px', zIndex: 999 }}>
+            <button 
+              onClick={toggleMute}
+              style={{ backgroundColor: isMuted ? '#ef4444' : '#374151', color: 'white', padding: '12px 25px', borderRadius: '30px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              {isMuted ? 'Unmute' : 'Mute'}
+            </button>
+            
+            <button 
+              onClick={endMeeting}
+              style={{ backgroundColor: '#ef4444', color: 'white', padding: '12px 25px', borderRadius: '30px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              End Meeting
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
