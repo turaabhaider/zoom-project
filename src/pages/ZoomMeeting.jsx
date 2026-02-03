@@ -5,19 +5,16 @@ const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg';
 const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 
 const ZoomMeeting = () => {
-  const [isZoomReady, setIsZoomReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  // 1. SILENT WATCHER: Removes the "Wait 5 seconds" alert. 
-  // The button stays grey until the SDK is fully loaded in the background.
   useEffect(() => {
-    const checkInterval = setInterval(() => {
+    const checkZoom = setInterval(() => {
       if (window.ZoomMtg) {
-        setIsZoomReady(true);
-        clearInterval(checkInterval);
-        console.log("Zoom SDK is ready.");
+        setIsReady(true);
+        clearInterval(checkZoom);
       }
     }, 1000);
-    return () => clearInterval(checkInterval);
+    return () => clearInterval(checkZoom);
   }, []);
 
   const generateSignature = (meetingNumber, role) => {
@@ -25,32 +22,25 @@ const ZoomMeeting = () => {
     const exp = iat + 60 * 60 * 2;
     const oHeader = { alg: 'HS256', typ: 'JWT' };
     const oPayload = {
-      sdkKey: SDK_KEY,
-      mn: meetingNumber,
-      role: role,
-      iat: iat,
-      exp: exp,
-      appKey: SDK_KEY,
-      tokenExp: iat + 60 * 60 * 2
+      sdkKey: SDK_KEY, mn: meetingNumber, role: role, iat: iat, exp: exp, appKey: SDK_KEY, tokenExp: exp
     };
     return KJUR.jws.JWS.sign('HS256', JSON.stringify(oHeader), JSON.stringify(oPayload), SDK_SECRET);
   };
 
   const startMeeting = async () => {
-    if (!isZoomReady) return;
+    if (!isReady) return;
 
-    // 2. WAKE UP CAMERA: Forces mobile browsers to ask for permission immediately
+    // 1. MOBILE FIX: Force permission popup so the browser "wakes up"
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    } catch (e) {
-      console.log("Permissions check finished.");
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop it immediately, Zoom will take over
+    } catch (err) {
+      console.log("Permission denied or already handled.");
     }
 
-    // 3. FORCE VISIBILITY: Show the container before Zoom starts
+    // 2. SHOW THE HIDDEN CONTAINER
     const zoomRoot = document.getElementById('zmmtg-root');
-    if (zoomRoot) {
-      zoomRoot.style.display = 'block';
-    }
+    if (zoomRoot) zoomRoot.style.display = 'block';
 
     const ZoomMtg = window.ZoomMtg;
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
@@ -62,62 +52,41 @@ const ZoomMeeting = () => {
 
     ZoomMtg.init({
       leaveUrl: window.location.origin,
-      patchJsMedia: true, // Fixes mobile audio/video
-      disableJoinAudioVideoUI: false,
-      isSupportMobileWeb: true, // Specific for mobile browsers
+      patchJsMedia: true, 
       success: () => {
         ZoomMtg.join({
           signature: signature,
           meetingNumber: meetingNumber,
-          userName: 'Architect Admin',
+          userName: 'Architect Mobile',
           sdkKey: SDK_KEY,
-          passWord: '', // Empty if no password
-          success: (res) => console.log('Successfully Joined'),
+          passWord: '',
+          success: (res) => console.log('Joined!'),
           error: (err) => {
-            console.error("Join Error:", err);
+            console.error(err);
             if (zoomRoot) zoomRoot.style.display = 'none';
           }
         });
       },
       error: (err) => {
-        console.error("Init Error:", err);
+        console.error(err);
         if (zoomRoot) zoomRoot.style.display = 'none';
       }
     });
   };
 
   return (
-    <div style={{ 
-      backgroundColor: '#0a0a0c', 
-      height: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      color: 'white',
-      fontFamily: 'sans-serif'
-    }}>
-      <h1 style={{ letterSpacing: '2px', fontWeight: 'bold' }}>ARCHITECT STUDIO LIVE</h1>
-      <p style={{ color: '#888', marginBottom: '20px' }}>
-        {isZoomReady ? 'System Ready' : 'Initializing Secure Connection...'}
-      </p>
-
+    <div style={{ backgroundColor: '#0a0a0c', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <h1 style={{ color: 'white' }}>ARCHITECT STUDIO LIVE</h1>
       <button 
         onClick={startMeeting} 
-        disabled={!isZoomReady}
+        disabled={!isReady}
         style={{ 
-          backgroundColor: isZoomReady ? '#2563eb' : '#333', 
-          color: 'white', 
-          padding: '15px 40px', 
-          borderRadius: '10px', 
-          border: 'none', 
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: isZoomReady ? 'pointer' : 'wait',
-          transition: 'all 0.3s ease'
+          backgroundColor: isReady ? '#2563eb' : '#333', 
+          color: 'white', padding: '15px 35px', borderRadius: '8px', 
+          border: 'none', cursor: isReady ? 'pointer' : 'wait', marginTop: '20px' 
         }}
       >
-        {isZoomReady ? 'JOIN ZOOM MEETING' : 'LOADING...'}
+        {isReady ? 'JOIN ZOOM MEETING' : 'PREPARING...'}
       </button>
     </div>
   );
