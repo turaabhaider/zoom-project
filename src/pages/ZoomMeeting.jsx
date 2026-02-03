@@ -1,46 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { KJUR } from 'jsrsasign';
 
 const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg';
 const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 
 const ZoomMeeting = () => {
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    const checkZoom = setInterval(() => {
-      if (window.ZoomMtg) {
-        setIsReady(true);
-        clearInterval(checkZoom);
-      }
-    }, 1000);
-    return () => clearInterval(checkZoom);
-  }, []);
+  // No more "waiting" state. We let the user click immediately.
+  const [status, setStatus] = useState('JOIN ZOOM MEETING');
 
   const generateSignature = (meetingNumber, role) => {
     const iat = Math.round(new Date().getTime() / 1000) - 30;
     const exp = iat + 60 * 60 * 2;
     const oHeader = { alg: 'HS256', typ: 'JWT' };
     const oPayload = {
-      sdkKey: SDK_KEY, mn: meetingNumber, role: role, iat: iat, exp: exp, appKey: SDK_KEY, tokenExp: exp
+      sdkKey: SDK_KEY,
+      mn: meetingNumber,
+      role: role,
+      iat: iat,
+      exp: exp,
+      appKey: SDK_KEY,
+      tokenExp: exp
     };
     return KJUR.jws.JWS.sign('HS256', JSON.stringify(oHeader), JSON.stringify(oPayload), SDK_SECRET);
   };
 
-  const startMeeting = async () => {
-    if (!isReady) return;
+  const startMeeting = () => {
+    setStatus('CONNECTING...');
 
-    // 1. MOBILE FIX: Force permission popup so the browser "wakes up"
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Stop it immediately, Zoom will take over
-    } catch (err) {
-      console.log("Permission denied or already handled.");
+    // 1. Check if Zoom script is loaded
+    if (!window.ZoomMtg) {
+      alert("Zoom script missing! Please refresh the page.");
+      setStatus('JOIN ZOOM MEETING');
+      return;
     }
 
-    // 2. SHOW THE HIDDEN CONTAINER
+    // 2. FORCE THE ZOOM CONTAINER TO FRONT
     const zoomRoot = document.getElementById('zmmtg-root');
-    if (zoomRoot) zoomRoot.style.display = 'block';
+    if (zoomRoot) {
+      zoomRoot.style.display = 'block';
+      zoomRoot.style.zIndex = '999999'; // Force on top
+    }
 
     const ZoomMtg = window.ZoomMtg;
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
@@ -50,43 +49,63 @@ const ZoomMeeting = () => {
     const meetingNumber = '8145639201';
     const signature = generateSignature(meetingNumber, 0);
 
+    // 3. FIXED INIT (Solves "Init invalid parameter" error)
     ZoomMtg.init({
-      leaveUrl: window.location.origin,
-      patchJsMedia: true, 
+      leaveUrl: window.location.href, // Must be full URL
+      patchJsMedia: true,             // Required for mobile
+      isSupportAV: true,              // Required for video
       success: () => {
         ZoomMtg.join({
           signature: signature,
           meetingNumber: meetingNumber,
           userName: 'Architect Mobile',
           sdkKey: SDK_KEY,
-          passWord: '',
-          success: (res) => console.log('Joined!'),
+          passWord: '', 
+          success: (res) => {
+            console.log('Join Success');
+          },
           error: (err) => {
             console.error(err);
-            if (zoomRoot) zoomRoot.style.display = 'none';
+            alert("Join Error: " + JSON.stringify(err));
+            setStatus('JOIN ZOOM MEETING');
           }
         });
       },
       error: (err) => {
-        console.error(err);
+        console.error("Init Error", err);
+        // If Init fails, hide the black box so user sees the app again
         if (zoomRoot) zoomRoot.style.display = 'none';
+        setStatus('TRY AGAIN');
       }
     });
   };
 
   return (
-    <div style={{ backgroundColor: '#0a0a0c', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ 
+      backgroundColor: '#0a0a0c', 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center' 
+    }}>
       <h1 style={{ color: 'white' }}>ARCHITECT STUDIO LIVE</h1>
+      
+      {/* BUTTON IS ALWAYS CLICKABLE NOW */}
       <button 
         onClick={startMeeting} 
-        disabled={!isReady}
         style={{ 
-          backgroundColor: isReady ? '#2563eb' : '#333', 
-          color: 'white', padding: '15px 35px', borderRadius: '8px', 
-          border: 'none', cursor: isReady ? 'pointer' : 'wait', marginTop: '20px' 
+          backgroundColor: '#2563eb', 
+          color: 'white', 
+          padding: '15px 40px', 
+          borderRadius: '8px', 
+          border: 'none', 
+          fontSize: '18px',
+          cursor: 'pointer',
+          marginTop: '20px' 
         }}
       >
-        {isReady ? 'JOIN ZOOM MEETING' : 'PREPARING...'}
+        {status}
       </button>
     </div>
   );
