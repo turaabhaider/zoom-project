@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Mic, Video, PhoneOff, Radio, ShieldCheck } from 'lucide-react';
 
@@ -7,27 +7,45 @@ const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 const LiveStudio = () => {
   const [joined, setJoined] = useState(false);
-  const [localTracks, setLocalTracks] = useState([]);
+  const [isConnecting, setIsConnecting] = useState(false); // Prevents INVALID_OPERATION
+  const localTracksRef = useRef([]);
 
   const startStreaming = async () => {
+    if (isConnecting || joined) return; // Stop if already trying to connect
+    
+    setIsConnecting(true);
     try {
+      // 1. Join with protection against multiple clicks
       await client.join(AGORA_APP_ID, "main-room", null, null);
+
+      // 2. Request Hardware with specific mobile-friendly constraints
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
-        encoderConfig: "720p_1" 
+        encoderConfig: { width: { max: 1280 }, height: { max: 720 }, frameRate: 30 }
       });
-      setLocalTracks([audioTrack, videoTrack]);
-      if (document.getElementById("local-player")) {
+      
+      localTracksRef.current = [audioTrack, videoTrack];
+
+      // 3. Play immediately after verifying the player exists
+      const player = document.getElementById("local-player");
+      if (player) {
         await videoTrack.play("local-player");
       }
+      
       await client.publish([audioTrack, videoTrack]);
       setJoined(true);
     } catch (error) {
-      console.error("Stream Initialization Failed:", error.message);
+      console.error("Connection failed:", error.message);
+      // If gateway fails, it's usually a network/firewall issue
+    } finally {
+      setIsConnecting(false);
     }
   };
 
   const stopStreaming = async () => {
-    localTracks.forEach(track => { track.stop(); track.close(); });
+    localTracksRef.current.forEach(track => {
+      track.stop();
+      track.close();
+    });
     await client.leave();
     setJoined(false);
     window.location.reload(); 
@@ -37,36 +55,39 @@ const LiveStudio = () => {
     <div className="studio-wrapper">
       <div className="studio-container">
         <header className="studio-header">
-          <div>
+          <div className="header-left">
             <h1 className="studio-title">
-              <Radio className={joined ? "live-icon active" : "live-icon"} color={joined ? "#ef4444" : "#475569"} size={32} />
+              <Radio className={joined ? "live-pulse" : ""} size={32} color={joined ? "#ef4444" : "#475569"} />
               ARCHITECT STUDIO
             </h1>
-            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px'}}>
-               <ShieldCheck size={14} color="#38bdf8" />
-               <span style={{fontSize: '11px', color: '#64748b', fontWeight: 'bold', letterSpacing: '1px'}}>SECURE LINE</span>
-            </div>
+            <p className="status-text"><ShieldCheck size={14} /> SECURE LINE ACTIVE</p>
           </div>
-          <div style={{background: '#0f172a', border: '1px solid #1e293b', padding: '6px 12px', borderRadius: '10px'}}>
-            <span style={{color: '#38bdf8', fontFamily: 'monospace', fontSize: '11px'}}>ID: fd09...30df</span>
-          </div>
+          <div className="id-badge">ID: fd09...30df</div>
         </header>
 
         <div className="video-stage">
-          <div id="local-player" style={{width: '100%', height: '100%', objectFit: 'cover'}}></div>
+          <div id="local-player" className="player-view"></div>
           {!joined && (
             <div className="video-overlay">
-              <Video color="#38bdf8" size={40} style={{marginBottom: '15px'}} />
-              <button onClick={startStreaming} className="btn-launch">GO LIVE NOW</button>
+              <div className="icon-box"><Video size={40} color="#38bdf8" /></div>
+              <button 
+                onClick={startStreaming} 
+                className="btn-launch" 
+                disabled={isConnecting}
+              >
+                {isConnecting ? "CONNECTING..." : "GO LIVE NOW"}
+              </button>
             </div>
           )}
         </div>
 
         {joined && (
           <div className="controls-row">
-            <button className="control-btn"><Mic size={20} /></button>
-            <button className="control-btn"><Video size={20} /></button>
-            <button onClick={stopStreaming} className="btn-end"><PhoneOff size={18} /> END</button>
+            <button className="control-btn"><Mic size={24} /></button>
+            <button className="control-btn"><Video size={24} /></button>
+            <button onClick={stopStreaming} className="btn-end">
+              <PhoneOff size={20} /> END SESSION
+            </button>
           </div>
         )}
       </div>
