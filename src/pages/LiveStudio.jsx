@@ -2,8 +2,11 @@ import React, { useState, useRef } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Mic, Video, PhoneOff, Radio } from 'lucide-react';
 
-// Using your WORKING App ID from the other project
-const APP_ID = 'f7eba401610743d8bd1a8c1b13ad66ba'; 
+// EXACT IDs FROM YOUR DASHBOARD
+const APP_ID = '615b3153f3ec43329f543142287f9684'; 
+const TOKEN = '007eJxTYBCMUq+/9cyTc9KT3w/4tRvyXUo4lmgk+nEv+qKXW1y5oVmBwczQNMnY0NQ4zTg12cTY2MgyzdTE2NDEyMjCPM3SzMJE+UhjZkMgI8O6qnssjAwQCOJzM5SUFhUlJunmJmbmMTAAAIl0IA8=';
+const CHANNEL = 'turrab-main';
+
 const client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' });
 
 const LiveStudio = () => {
@@ -16,21 +19,25 @@ const LiveStudio = () => {
     setLoading(true);
 
     try {
-      // FIX: Set role to host and join WITHOUT a token (null)
-      // This works if your Agora project is in "Testing Mode"
+      // 1. Join with secure role and token to fix the Gateway Error
       await client.setClientRole('host');
-      await client.join(APP_ID, 'turrab-main', null, null);
+      await client.join(APP_ID, CHANNEL, TOKEN, null);
 
-      const [audio, video] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      // 2. Initialize Hardware for 720p Mobile Video
+      const [audio, video] = await AgoraRTC.createMicrophoneAndCameraTracks({
+        encoderConfig: "720p_1"
+      });
+
       localTracksRef.current = { video, audio };
 
+      // 3. Play and Publish
       await video.play('local-player');
       await client.publish([audio, video]);
       
       setJoined(true);
     } catch (err) {
       console.error("Broadcast failed:", err);
-      alert("Error: " + err.message);
+      alert("Stream Error: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -53,7 +60,7 @@ const LiveStudio = () => {
             <Radio className={joined ? "live-pulse" : ""} size={32} color={joined ? "#ef4444" : "#475569"} />
             ARCHITECT STUDIO
           </h1>
-          <div className="id-badge">ID: f7eb...66ba</div>
+          <div className="id-badge">SECURE HANDSHAKE ACTIVE</div>
         </header>
 
         <div className="video-stage">
@@ -61,7 +68,7 @@ const LiveStudio = () => {
           {!joined && (
             <div className="video-overlay">
               <button onClick={startStreaming} className="btn-launch" disabled={loading}>
-                {loading ? "INITIALIZING..." : "GO LIVE NOW"}
+                {loading ? "CONNECTING TO GATEWAY..." : "GO LIVE NOW"}
               </button>
             </div>
           )}
@@ -71,7 +78,7 @@ const LiveStudio = () => {
           <div className="controls-row">
             <button className="control-btn"><Mic /></button>
             <button className="control-btn"><Video /></button>
-            <button onClick={stopStreaming} className="btn-end">END SESSION</button>
+            <button onClick={stopStreaming} className="btn-end"><PhoneOff /> END SESSION</button>
           </div>
         )}
       </div>
