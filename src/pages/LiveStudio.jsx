@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-import { Mic, Video, PhoneOff, Radio, ShieldCheck } from 'lucide-react';
+import { Mic, Video, PhoneOff, Radio } from 'lucide-react';
 
-// Use your WORKING App ID here
+// Using your WORKING App ID from the other project
 const APP_ID = 'f7eba401610743d8bd1a8c1b13ad66ba'; 
 const client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' });
 
@@ -16,26 +16,21 @@ const LiveStudio = () => {
     setLoading(true);
 
     try {
-      // 1. Get Token (Using your local server logic)
-      const res = await fetch('http://localhost:5000/api/get-token?channel=turrab-main');
-      const { token } = await res.json();
-
-      // 2. Set Role to Host (This is the "magic" fix)
+      // FIX: Set role to host and join WITHOUT a token (null)
+      // This works if your Agora project is in "Testing Mode"
       await client.setClientRole('host');
-      await client.join(APP_ID, 'turrab-main', token, null);
+      await client.join(APP_ID, 'turrab-main', null, null);
 
-      // 3. Create Tracks
       const [audio, video] = await AgoraRTC.createMicrophoneAndCameraTracks();
       localTracksRef.current = { video, audio };
 
-      // 4. Play and Publish
       await video.play('local-player');
       await client.publish([audio, video]);
       
       setJoined(true);
     } catch (err) {
       console.error("Broadcast failed:", err);
-      alert("Check if your Token Server (Port 5000) is running!");
+      alert("Error: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -58,7 +53,7 @@ const LiveStudio = () => {
             <Radio className={joined ? "live-pulse" : ""} size={32} color={joined ? "#ef4444" : "#475569"} />
             ARCHITECT STUDIO
           </h1>
-          <div className="id-badge">CHANNEL: turrab-main</div>
+          <div className="id-badge">ID: f7eb...66ba</div>
         </header>
 
         <div className="video-stage">
@@ -66,7 +61,7 @@ const LiveStudio = () => {
           {!joined && (
             <div className="video-overlay">
               <button onClick={startStreaming} className="btn-launch" disabled={loading}>
-                {loading ? "CONNECTING..." : "START BROADCAST"}
+                {loading ? "INITIALIZING..." : "GO LIVE NOW"}
               </button>
             </div>
           )}
@@ -76,7 +71,7 @@ const LiveStudio = () => {
           <div className="controls-row">
             <button className="control-btn"><Mic /></button>
             <button className="control-btn"><Video /></button>
-            <button onClick={stopStreaming} className="btn-end"><PhoneOff /> END</button>
+            <button onClick={stopStreaming} className="btn-end">END SESSION</button>
           </div>
         )}
       </div>
