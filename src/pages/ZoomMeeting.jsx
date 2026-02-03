@@ -5,7 +5,8 @@ const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg';
 const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 
 const ZoomMeeting = () => {
-  const [btnText, setBtnText] = useState('JOIN ZOOM MEETING');
+  // FIXED: Both names now match exactly to avoid ReferenceError
+  const [status, setStatus] = useState('JOIN ZOOM MEETING');
 
   const generateSignature = (meetingNumber, role) => {
     const iat = Math.round(new Date().getTime() / 1000) - 30;
@@ -17,13 +18,18 @@ const ZoomMeeting = () => {
     return KJUR.jws.JWS.sign('HS256', JSON.stringify(oHeader), JSON.stringify(oPayload), SDK_SECRET);
   };
 
-  const startMeeting = () => {
+  const startMeeting = async () => {
+    // Check if Zoom is there, if not, wait 1.5s
     if (!window.ZoomMtg) {
-      setBtnStatus('SDK LOADING... TRY AGAIN');
-      return;
+      setStatus('LOADING SDK...');
+      await new Promise(r => setTimeout(r, 1500));
+      if (!window.ZoomMtg) {
+        setStatus('SDK ERROR - REFRESH');
+        return;
+      }
     }
 
-    setBtnText('CONNECTING...');
+    setStatus('CONNECTING...');
     const ZoomMtg = window.ZoomMtg;
     
     // Fix for "Init invalid parameter"
@@ -34,11 +40,13 @@ const ZoomMeeting = () => {
     const meetingNumber = '8145639201';
     const signature = generateSignature(meetingNumber, 0);
 
-    document.getElementById('zmmtg-root').style.display = 'block';
+    // Make the Zoom window visible
+    const zoomRoot = document.getElementById('zmmtg-root');
+    if (zoomRoot) zoomRoot.style.display = 'block';
 
     ZoomMtg.init({
       leaveUrl: window.location.origin,
-      patchJsMedia: true, // Crucial for mobile video/audio
+      patchJsMedia: true, 
       success: () => {
         ZoomMtg.join({
           signature: signature,
@@ -46,18 +54,18 @@ const ZoomMeeting = () => {
           userName: 'Architect Admin',
           sdkKey: SDK_KEY,
           passWord: '',
-          success: () => setBtnText('JOINED'),
+          success: () => setStatus('JOINED'),
           error: (err) => {
             console.error(err);
-            setBtnText('JOIN FAILED');
-            document.getElementById('zmmtg-root').style.display = 'none';
+            setStatus('JOIN FAILED');
+            if (zoomRoot) zoomRoot.style.display = 'none';
           }
         });
       },
       error: (err) => {
         console.error(err);
-        setBtnText('INIT ERROR');
-        document.getElementById('zmmtg-root').style.display = 'none';
+        setStatus('RETRY JOIN');
+        if (zoomRoot) zoomRoot.style.display = 'none';
       }
     });
   };
@@ -69,10 +77,10 @@ const ZoomMeeting = () => {
         onClick={startMeeting} 
         style={{ 
           backgroundColor: '#2563eb', color: 'white', padding: '15px 40px', 
-          borderRadius: '10px', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginTop: '20px' 
+          borderRadius: '10px', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginTop: '30px' 
         }}
       >
-        {btnText}
+        {status}
       </button>
     </div>
   );
