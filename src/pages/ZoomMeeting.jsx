@@ -1,8 +1,8 @@
 import React from 'react';
 import { KJUR } from 'jsrsasign';
 
-const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg'; // Verified
-const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR'; // Verified
+const SDK_KEY = '07JZ0mQXRz2Yi0RNRgO4cg';
+const SDK_SECRET = 'IU4zHxFeC57UlV71VtAaRpzm80oUOEZR';
 
 const ZoomMeeting = () => {
   
@@ -23,15 +23,26 @@ const ZoomMeeting = () => {
   };
 
   const startMeeting = () => {
-    // Access Zoom from the global window object to bypass Vite C$1 error
+    // FIX: Check if SDK is actually loaded
+    if (!window.ZoomMtg) {
+      alert("Zoom SDK is still loading or failed to load. Please refresh the page.");
+      return;
+    }
+
     const ZoomMtg = window.ZoomMtg;
+
+    // Show the hidden Zoom container
+    const meetingRoot = document.getElementById('zmmtg-root');
+    if (meetingRoot) {
+      meetingRoot.style.display = 'block';
+    }
 
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.18.0/lib', '/av');
     ZoomMtg.preLoadWasm();
     ZoomMtg.prepareWebSDK();
 
-    const meetingNumber = '8145639201'; // Replace with a REAL meeting ID from your Zoom dashboard
-    const passWord = ''; // Replace with meeting passcode if set
+    const meetingNumber = '8145639201'; // Ensure this is a real ID
+    const passWord = ''; 
     const userName = 'Architect Admin';
     const role = 0; 
 
@@ -39,6 +50,7 @@ const ZoomMeeting = () => {
 
     ZoomMtg.init({
       leaveUrl: window.location.origin,
+      patchJsMedia: true,
       success: () => {
         ZoomMtg.join({
           signature: signature,
@@ -46,11 +58,17 @@ const ZoomMeeting = () => {
           userName: userName,
           sdkKey: SDK_KEY,
           passWord: passWord,
-          success: (res) => console.log('Zoom Join Success'),
-          error: (err) => console.error('Zoom Join Error', err)
+          success: (res) => console.log('Zoom Joined'),
+          error: (err) => {
+            console.error('Join Error', err);
+            if (meetingRoot) meetingRoot.style.display = 'none';
+          }
         });
       },
-      error: (err) => console.error('Zoom Init Error', err)
+      error: (err) => {
+        console.error('Init Error', err);
+        if (meetingRoot) meetingRoot.style.display = 'none';
+      }
     });
   };
 
@@ -60,7 +78,6 @@ const ZoomMeeting = () => {
       <button onClick={startMeeting} style={{ backgroundColor: '#2563eb', color: 'white', padding: '12px 30px', borderRadius: '8px', border: 'none', cursor: 'pointer', marginTop: '20px' }}>
         JOIN ZOOM MEETING
       </button>
-      <div id="zmmtg-root"></div>
     </div>
   );
 };
