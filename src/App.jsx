@@ -1,23 +1,23 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 
-// Importing your actual files visible in image_3a8e5c.png
+// Import the new Agora file instead of Zoom
 import Dashboard from './pages/Dashboard'; 
 import LiveStudio from './pages/LiveStudio';
-import ZoomMeeting from './pages/ZoomMeeting';
+import AgoraMeeting from './pages/AgoraMeeting'; // Updated line
 
 function App() {
   return (
     <Routes>
-      {/* 1. Your Original Dashboard with all content */}
+      {/* 1. Your Original Dashboard */}
       <Route path="/" element={<Dashboard />} />
       
       {/* 2. The Broadcast Studio page */}
       <Route path="/stream/live" element={<LiveStudio />} />
       
-      {/* 3. The Zoom Meeting (Works with or without an ID) */}
-      <Route path="/meeting/zoom/:id" element={<ZoomMeeting />} />
-      <Route path="/meeting/zoom" element={<ZoomMeeting />} />
+      {/* 3. The Agora Meeting (Replaces Zoom) */}
+      <Route path="/meeting/zoom" element={<AgoraMeeting />} />
+      <Route path="/meeting/zoom/:id" element={<AgoraMeeting />} />
     </Routes>
   );
 }
