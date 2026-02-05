@@ -1,30 +1,34 @@
 import React, { useState } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
+// --- CONFIGURATION ---
 const APP_ID = "3004cbdcbcf0421d86cec599166d45a3"; 
-const CHANNEL = "architect_live";
-const TOKEN = "007eJxTYKhp1jXz/5hnfWWDvzTTetnb5QY3AyY8u5DefEDryc8Kr3MKDMYGBibJSSnJSclpBiZGhikWZsmpyaaWloZmZikmponGd2ybMhsCGRkq/z1jZmSAQBCfjyGxKDkjsyQ1uSQ+J7MslYEBAPIjJUE=";
+const CHANNEL = "architect_live"; // This is the channel name you used
+const TOKEN = "007eJxTYDh5KPdX9B6OzbN5IljX3RP40m482332zzyuXcavxT0PW1xUYDA2MDBJTkpJTkpOMzAxMkyxMEtOTTa1tDQ0M0sxMU00fniwJbMhkJGh7psYAyMUgvh8DIlFyRmZJanJJfE5mWWpDAwA+n4kwQ==";
+// ---------------------
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 const AgoraMeeting = () => {
   const [joined, setJoined] = useState(false);
   const [status, setStatus] = useState('JOIN LIVE MEETING');
-  const [localTracks, setLocalTracks] = useState([]); // Added to manage controls
+  const [localTracks, setLocalTracks] = useState([]); 
   const [isMuted, setIsMuted] = useState(false);
 
   const startCall = async () => {
     try {
       setStatus('CONNECTING...');
       
+      // 1. Join the channel
       await client.join(APP_ID, CHANNEL, TOKEN, 0);
       
+      // 2. Get Camera & Mic
       let audioTrack, videoTrack;
       try {
         [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-        setLocalTracks([audioTrack, videoTrack]); // Store tracks for controls
+        setLocalTracks([audioTrack, videoTrack]); 
       } catch (deviceError) {
-        console.error("Camera/Mic access denied or not found:", deviceError);
+        console.error("Camera/Mic access denied:", deviceError);
         setStatus('CAMERA NOT FOUND');
         await client.leave();
         return;
@@ -33,22 +37,26 @@ const AgoraMeeting = () => {
       setJoined(true);
       setStatus('LIVE');
 
+      // 3. Play Video Locally
       setTimeout(() => {
         const playerDiv = document.getElementById('local-player');
         if (playerDiv) videoTrack.play(playerDiv);
       }, 200);
 
+      // 4. Publish to Channel
       await client.publish([audioTrack, videoTrack]);
 
     } catch (error) {
       console.error("Join Failed:", error);
-      setStatus('JOIN FAILED - RETRY');
+      setStatus('JOIN FAILED - CHECK TOKEN');
     }
   };
 
-  // --- NEW CONTROL FUNCTIONS ---
+  // --- CONTROLS ---
   const toggleMute = async () => {
     if (localTracks[0]) {
+      // If isMuted is false, we want to mute (enabled = false)
+      // If isMuted is true, we want to unmute (enabled = true)
       await localTracks[0].setEnabled(isMuted);
       setIsMuted(!isMuted);
     }
@@ -62,7 +70,7 @@ const AgoraMeeting = () => {
     await client.leave();
     setJoined(false);
     setStatus('JOIN LIVE MEETING');
-    window.location.reload(); // Ensures hardware is fully released
+    window.location.reload(); 
   };
 
   return (
