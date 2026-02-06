@@ -2,12 +2,11 @@ import React, { useState, useRef } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Mic, MicOff, Video, VideoOff, Radio } from 'lucide-react';
 
-// VERIFIED CREDENTIALS
+// VERIFIED CREDENTIALS FOR "THE OTHER ONE"
 const APP_ID = '615b3153f3ec43329f543142287f9684'; 
 const CHANNEL = 'turrab-main'; 
-const TOKEN = '007eJxTYChfurrS+FHvmovdRYzPjl26tTAg6uJvLXND5zUrwuYk71NXYDAzNE0yNjQ1TjNOTTYxNjayTDM1MTY0MTKyME+zNLMwcT7cktkQyMiQpsPIAIMgPjdDSWlRUWKSbm5iZh4DAwB/BCG2';
+const TOKEN = '007eJxTYJhlaS760fCQV0Rx7mntpFDOO3PY8zUvRfvvPhYtMlNBN1WBwczQNMnY0NQ4zTg12cTY2MgyzdTE2NDEyMjCPM3SzMKk9VtrZkMgI8O5K9JMjAwQCOJzM5SUFhUlJunmJmbmMTAAADWvHzI=';
 
-// Create client outside to keep state consistent
 const client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' });
 
 const LiveStudio = () => {
@@ -19,13 +18,10 @@ const LiveStudio = () => {
 
   const startStreaming = async () => {
     if (loading || joined || client.connectionState !== 'DISCONNECTED') return;
-    
     setLoading(true);
 
     try {
       await client.setClientRole('host');
-      
-      // Join using the provided token
       await client.join(APP_ID, CHANNEL, TOKEN, null);
 
       const [audio, video] = await AgoraRTC.createMicrophoneAndCameraTracks({
@@ -39,7 +35,6 @@ const LiveStudio = () => {
       setJoined(true);
     } catch (err) {
       console.error("Setup Failed:", err);
-      // Reset client on failure to allow retry
       if (client.connectionState !== 'DISCONNECTED') await client.leave();
     } finally {
       setLoading(false);
@@ -74,41 +69,40 @@ const LiveStudio = () => {
   };
 
   return (
-    <div className="studio-wrapper" style={{ backgroundColor: '#0f172a', height: '100vh', color: 'white' }}>
-      <div className="studio-container" style={{ padding: '20px' }}>
-        <header className="studio-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 className="studio-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div style={{ backgroundColor: '#0f172a', height: '100vh', color: 'white', overflow: 'hidden' }}>
+      <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '24px', fontWeight: 'bold' }}>
             <Radio className={joined ? "live-pulse" : ""} size={32} color={joined ? "#ef4444" : "#475569"} />
             ARCHITECT STUDIO
           </h1>
-          <div className="id-badge" style={{ opacity: 0.6 }}>ID: 615b...9684</div>
+          <div style={{ opacity: 0.6, fontSize: '14px' }}>ID: 615b...9684</div>
         </header>
 
-        <div className="video-stage" style={{ position: 'relative', width: '100%', height: '70vh', backgroundColor: 'black', borderRadius: '15px', overflow: 'hidden' }}>
-          <div id="local-player" className="player-view" style={{ width: '100%', height: '100%' }}></div>
+        <div style={{ position: 'relative', width: '100%', height: '70vh', backgroundColor: 'black', borderRadius: '15px', overflow: 'hidden' }}>
+          <div id="local-player" style={{ width: '100%', height: '100%' }}></div>
           {!joined && (
-            <div className="video-overlay" style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.5)' }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.6)' }}>
               <button 
                 onClick={startStreaming} 
-                className="btn-launch" 
                 disabled={loading}
-                style={{ backgroundColor: '#2563eb', padding: '15px 40px', borderRadius: '30px', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer' }}
+                style={{ backgroundColor: '#2563eb', padding: '15px 45px', borderRadius: '30px', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer', transition: '0.3s' }}
               >
-                {loading ? "ESTABLISHING..." : "GO LIVE NOW"}
+                {loading ? "CONNECTING..." : "GO LIVE NOW"}
               </button>
             </div>
           )}
         </div>
 
         {joined && (
-          <div className="controls-row" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
-            <button onClick={toggleMic} className="control-btn" style={{ padding: '15px', borderRadius: '50%', backgroundColor: isMuted ? '#ef4444' : '#334155', border: 'none', color: 'white', cursor: 'pointer' }}>
-              {isMuted ? <MicOff /> : <Mic />}
+          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '25px', alignItems: 'center' }}>
+            <button onClick={toggleMic} style={{ padding: '15px', borderRadius: '50%', backgroundColor: isMuted ? '#ef4444' : '#334155', border: 'none', color: 'white', cursor: 'pointer' }}>
+              {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
             </button>
-            <button onClick={toggleVideo} className="control-btn" style={{ padding: '15px', borderRadius: '50%', backgroundColor: isVidOff ? '#ef4444' : '#334155', border: 'none', color: 'white', cursor: 'pointer' }}>
-              {isVidOff ? <VideoOff /> : <Video />}
+            <button onClick={toggleVideo} style={{ padding: '15px', borderRadius: '50%', backgroundColor: isVidOff ? '#ef4444' : '#334155', border: 'none', color: 'white', cursor: 'pointer' }}>
+              {isVidOff ? <VideoOff size={24} /> : <Video size={24} />}
             </button>
-            <button onClick={stopStreaming} className="btn-end" style={{ backgroundColor: '#ef4444', padding: '10px 30px', borderRadius: '10px', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={stopStreaming} style={{ backgroundColor: '#ef4444', padding: '12px 35px', borderRadius: '12px', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
               END SESSION
             </button>
           </div>

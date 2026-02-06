@@ -3,8 +3,8 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 
 // --- CONFIGURATION ---
 const APP_ID = "3004cbdcbcf0421d86cec599166d45a3"; 
-const CHANNEL = "architect_live"; // This is the channel name you used
-const TOKEN = "007eJxTYDh5KPdX9B6OzbN5IljX3RP40m482332zzyuXcavxT0PW1xUYDA2MDBJTkpJTkpOMzAxMkyxMEtOTTa1tDQ0M0sxMU00fniwJbMhkJGh7psYAyMUgvh8DIlFyRmZJanJJfE5mWWpDAwA+n4kwQ==";
+const CHANNEL = "architect_live"; 
+const TOKEN = "007eJxTYJDyv2A87+TmllV68Y0s8660LM7It8ovzWBel2rOc1pi/zwFBmMDA5PkpJTkpOQ0AxMjwxQLs+TUZFNLS0MzsxQT00Rj5W+tmQ2BjAyiu2YwMTJAIIjPx5BYlJyRWZKaXBKfk1mWysAAAEAfImk=";
 // ---------------------
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
@@ -19,10 +19,10 @@ const AgoraMeeting = () => {
     try {
       setStatus('CONNECTING...');
       
-      // 1. Join the channel
+      // 1. Join the channel first
       await client.join(APP_ID, CHANNEL, TOKEN, 0);
       
-      // 2. Get Camera & Mic
+      // 2. Create local microphone and camera tracks
       let audioTrack, videoTrack;
       try {
         [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
@@ -37,32 +37,30 @@ const AgoraMeeting = () => {
       setJoined(true);
       setStatus('LIVE');
 
-      // 3. Play Video Locally
+      // 3. Play video locally
       setTimeout(() => {
         const playerDiv = document.getElementById('local-player');
         if (playerDiv) videoTrack.play(playerDiv);
       }, 200);
 
-      // 4. Publish to Channel
+      // 4. Publish tracks to the channel
       await client.publish([audioTrack, videoTrack]);
 
     } catch (error) {
       console.error("Join Failed:", error);
-      setStatus('JOIN FAILED - CHECK TOKEN');
+      setStatus('TOKEN EXPIRED - REFRESH'); // Likely cause of failure
     }
   };
 
-  // --- CONTROLS ---
   const toggleMute = async () => {
     if (localTracks[0]) {
-      // If isMuted is false, we want to mute (enabled = false)
-      // If isMuted is true, we want to unmute (enabled = true)
       await localTracks[0].setEnabled(isMuted);
       setIsMuted(!isMuted);
     }
   };
 
   const endMeeting = async () => {
+    // Release hardware and leave
     localTracks.forEach(track => {
       track.stop();
       track.close();
